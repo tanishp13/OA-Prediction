@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  body { margin:0; background:#e6e4e2; font-family:"Lora", Georgia, serif; color:#201f1d; }
+  * { box-sizing:border-box; }
+  a { color:#7d5411; }
+  a:hover { color:#a06f24; }
+  button { font-family:"Lora", Georgia, serif; cursor:pointer; }
+  :focus-visible { outline:2px solid #b68235; outline-offset:2px; }
+  ::selection { background:#ffe3bf; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  @keyframes oaPulse { 0%,100% { opacity:.25 } 50% { opacity:1 } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:28px 32px 48px;display:flex;flex-direction:column;gap:22px">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;border-bottom:1px solid rgba(32,31,29,.16);padding-bottom:14px">
+    <div>
+      <div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#7d5411;font-variant-numeric:tabular-nums">North Eastern Region · Musculoskeletal screening</div>
+      <h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:40px;line-height:1.08;margin:6px 0 0">AI-assisted early detection of osteoarthritis risk markers</h1>
+      <div style="font-size:13px;color:#605d5d;margin-top:5px">Edge-first screening workflow for primary health centres, rural camps and community outreach — software prototype.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex:none">
+      <button onClick="{{ showApp }}" style="position:relative;padding:9px 16px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:13px;color:#7d5411" style-hover="background:#fff3e4">Field app
+        <sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;inset:-3px;border:1px solid #b68235;border-radius:6px"></span></sc-if>
+      </button>
+      <button onClick="{{ showDash }}" style="position:relative;padding:9px 16px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:13px;color:#7d5411" style-hover="background:#fff3e4">Supervisor dashboard
+        <sc-if value="{{ isDash }}"><span style="position:absolute;inset:-3px;border:1px solid #b68235;border-radius:6px"></span></sc-if>
+      </button>
+    </div>
+  </div>
+
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap">
+
+    <div style="flex:none">
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" hint-size="428px,908px">
+        <div style="min-height:100%;background:#f3f2f2;display:flex;flex-direction:column;font-family:'Lora',Georgia,serif;color:#201f1d">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(32,31,29,.16)">
+            <div style="display:flex;align-items:baseline;gap:7px">
+              <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px">OA·Sanjeevani</span>
+              <span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411">v0.4 field</span>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button onClick="{{ toggleLangs }}" style="padding:5px 9px;border:1px solid rgba(32,31,29,.28);background:transparent;border-radius:4px;font-size:11px" style-hover="background:#fff3e4">{{ langShort }}</button>
+              <button onClick="{{ toggleOnline }}" style="padding:5px 9px;border:1px solid rgba(32,31,29,.28);background:transparent;border-radius:4px;font-size:11px" style-hover="background:#fff3e4">{{ netLabel }}</button>
+            </div>
+          </div>
+
+          <sc-if value="{{ langsOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px 16px 14px;background:#eae9e9;border-bottom:1px solid rgba(32,31,29,.16)">
+              <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#605d5d;margin-bottom:8px">Interview language</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ langList }}" as="l" hint-placeholder-count="8">
+                  <button onClick="{{ l.pick }}" style="position:relative;padding:8px 10px;border:1px solid rgba(32,31,29,.28);background:#f3f2f2;border-radius:4px;font-size:12px;text-align:left;min-height:44px">
+                    <span style="display:block">{{ l.name }}</span>
+                    <span style="display:block;font-size:9px;color:#7d5411;font-variant-numeric:tabular-nums">{{ l.cov }}</span>
+                    <sc-if value="{{ l.sel }}"><span style="position:absolute;inset:-3px;border:1px solid #b68235;border-radius:6px"></span></sc-if>
+                  </button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ langPending }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:10px;padding:9px 11px;border:1px solid #e1ad66;border-radius:4px;font-size:11.5px;line-height:1.5;color:#5a3b0a;background:#fff3e4">Patient-facing strings for this language are awaiting native-speaker review. Untranslated prompts fall back to English so no question is silently dropped.</div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <div style="flex:1;padding:0 0 26px">
+
+            <sc-if value="{{ atSignIn }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:26px 20px">
+                <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Step 1 · Onboarding</div>
+                <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:31px;line-height:1.12;margin:8px 0 4px">{{ authTitle }}</h2>
+                <p style="font-size:13px;line-height:1.6;color:#605d5d;margin:0 0 20px">Sign in once at the start of the day. All screenings you record stay on this device until a network is available.</p>
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <label style="display:block">
+                    <span style="display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;margin-bottom:5px">Worker ID / ASHA code</span>
+                    <input value="{{ workerId }}" onChange="{{ setWorkerId }}" style="width:100%;min-height:46px;padding:11px 12px;border:1px solid rgba(32,31,29,.28);border-radius:4px;background:#f8f4f4;font-family:'Lora',Georgia,serif;font-size:15px;font-variant-numeric:tabular-nums">
+                  </label>
+                  <label style="display:block">
+                    <span style="display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;margin-bottom:5px">PIN</span>
+                    <input type="password" value="{{ pin }}" onChange="{{ setPin }}" style="width:100%;min-height:46px;padding:11px 12px;border:1px solid rgba(32,31,29,.28);border-radius:4px;background:#f8f4f4;font-family:'Lora',Georgia,serif;font-size:15px;letter-spacing:.3em">
+                  </label>
+                  <sc-if value="{{ isSignUp }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:14px">
+                      <label style="display:block">
+                        <span style="display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;margin-bottom:5px">Facility / camp</span>
+                        <input value="{{ facility }}" onChange="{{ setFacility }}" style="width:100%;min-height:46px;padding:11px 12px;border:1px solid rgba(32,31,29,.28);border-radius:4px;background:#f8f4f4;font-family:'Lora',Georgia,serif;font-size:15px">
+                      </label>
+                      <div style="padding:9px 11px;border:1px solid rgba(32,31,29,.16);border-radius:4px;font-size:11.5px;line-height:1.5;color:#605d5d">New accounts are provisioned offline and verified by the PHC supervisor at the next sync.</div>
+                    </div>
+                  </sc-if>
+                  <button onClick="{{ doAuth }}" style="min-height:50px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:15px;color:#7d5411;letter-spacing:.02em" style-hover="background:#fff3e4" style-active="background:#ffe3bf">{{ authCta }}</button>
+                  <button onClick="{{ toggleAuthMode }}" style="min-height:44px;border:none;background:transparent;font-size:12.5px;color:#605d5d;text-decoration:underline;text-underline-offset:3px" style-hover="color:#7d5411">{{ authSwitch }}</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ atQueue }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:20px 16px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                  <div>
+                    <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Today · {{ campName }}</div>
+                    <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:27px;margin:5px 0 0">Screening list</h2>
+                  </div>
+                  <div style="text-align:right;font-variant-numeric:tabular-nums">
+                    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;line-height:1">{{ doneCount }}</div>
+                    <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d">recorded</div>
+                  </div>
+                </div>
+                <div style="height:1px;background:rgba(32,31,29,.16);margin:14px 0"></div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ queue }}" as="p" hint-placeholder-count="4">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;border:1px solid rgba(32,31,29,.16);border-radius:4px;background:#f8f4f4">
+                      <div>
+                        <div style="font-size:14px">{{ p.name }}</div>
+                        <div style="font-size:11px;color:#605d5d;font-variant-numeric:tabular-nums">{{ p.meta }}</div>
+                      </div>
+                      <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7d5411;text-align:right">{{ p.status }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <button onClick="{{ startNew }}" style="width:100%;min-height:50px;margin-top:16px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:15px;color:#7d5411" style-hover="background:#fff3e4">+ New screening</button>
+                <div style="margin-top:14px;padding:11px 12px;border:1px solid rgba(32,31,29,.16);border-radius:4px">
+                  <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d;margin-bottom:5px">Sync queue</div>
+                  <div style="font-size:12.5px;line-height:1.55;color:#444141">{{ syncLine }}</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ atForm }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:20px 16px">
+                <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Step 2 · Questionnaire</div>
+                <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:27px;margin:6px 0 2px">Pain &amp; mobility screening</h2>
+                <p style="font-size:12.5px;line-height:1.55;color:#605d5d;margin:0 0 4px">Read each prompt aloud in the interview language. Nothing is mandatory — missing items are marked and the model reports lower confidence.</p>
+                <div style="height:1px;background:rgba(32,31,29,.16);margin:14px 0"></div>
+
+                <label style="display:block;margin-bottom:16px">
+                  <span style="display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;margin-bottom:5px">Patient name</span>
+                  <input value="{{ pName }}" onChange="{{ setPName }}" style="width:100%;min-height:46px;padding:11px 12px;border:1px solid rgba(32,31,29,.28);border-radius:4px;background:#f8f4f4;font-family:'Lora',Georgia,serif;font-size:15px">
+                </label>
+
+                <div style="display:flex;flex-direction:column;gap:20px">
+                  <sc-for list="{{ questions }}" as="q" hint-placeholder-count="9">
+                    <div>
+                      <div style="display:flex;gap:8px;align-items:baseline;margin-bottom:8px">
+                        <span style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;color:#7d5411;font-variant-numeric:tabular-nums">{{ q.num }}</span>
+                        <div>
+                          <div style="font-size:15px;line-height:1.35">{{ q.label }}</div>
+                          <div style="font-size:11.5px;color:#605d5d;font-style:italic">{{ q.en }}</div>
+                        </div>
+                      </div>
+                      <div style="display:flex;flex-wrap:wrap;gap:6px">
+                        <sc-for list="{{ q.opts }}" as="o" hint-placeholder-count="4">
+                          <button onClick="{{ o.pick }}" style="position:relative;min-height:44px;padding:10px 13px;border:1px solid rgba(32,31,29,.28);background:#f8f4f4;border-radius:4px;font-size:13px" style-hover="background:#fff3e4">{{ o.label }}
+                            <sc-if value="{{ o.sel }}"><span style="position:absolute;inset:-3px;border:1px solid #b68235;border-radius:6px;background:rgba(182,130,53,.09)"></span></sc-if>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:22px">
+                  <button onClick="{{ back }}" style="flex:1;min-height:50px;border:1px solid rgba(32,31,29,.28);background:transparent;border-radius:4px;font-size:14px;color:#444141" style-hover="background:#eae9e9">Back</button>
+                  <button onClick="{{ next }}" style="flex:2;min-height:50px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:15px;color:#7d5411" style-hover="background:#fff3e4">Continue to tests</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ atCapture }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:20px 16px">
+                <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Step 3 · Guided tests</div>
+                <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:27px;margin:6px 0 10px">Movement &amp; joint capture</h2>
+
+                <div style="display:flex;gap:6px;margin-bottom:14px">
+                  <button onClick="{{ pickTier0 }}" style="position:relative;flex:1;min-height:52px;padding:8px;border:1px solid rgba(32,31,29,.28);background:#f8f4f4;border-radius:4px;font-size:12.5px;line-height:1.3" style-hover="background:#fff3e4">Tier 0<br><span style="font-size:10.5px;color:#605d5d">phone only</span>
+                    <sc-if value="{{ isTier0 }}"><span style="position:absolute;inset:-3px;border:1px solid #b68235;border-radius:6px"></span></sc-if>
+                  </button>
+                  <button onClick="{{ pickTier1 }}" style="position:relative;flex:1;min-height:52px;padding:8px;border:1px solid rgba(32,31,29,.28);background:#f8f4f4;border-radius:4px;font-size:12.5px;line-height:1.3" style-hover="background:#fff3e4">Tier 1<br><span style="font-size:10.5px;color:#605d5d">sensor kit</span>
+                    <sc-if value="{{ isTier1 }}"><span style="position:absolute;inset:-3px;border:1px solid #b68235;border-radius:6px"></span></sc-if>
+                  </button>
+                </div>
+
+                <div style="padding:12px;border:1px solid rgba(32,31,29,.16);border-radius:4px;background:#f8f4f4;margin-bottom:16px">
+                  <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d;margin-bottom:8px">{{ kitTitle }}</div>
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <sc-for list="{{ channels }}" as="c" hint-placeholder-count="4">
+                      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                        <span style="font-size:12.5px">{{ c.name }}</span>
+                        <span style="font-size:11px;color:#7d5411;font-variant-numeric:tabular-nums;letter-spacing:.06em">{{ c.state }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ exercises }}" as="e" hint-placeholder-count="4">
+                    <div style="padding:13px;border:1px solid rgba(32,31,29,.16);border-radius:4px">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+                        <div style="font-size:14.5px">{{ e.title }}</div>
+                        <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#7d5411;flex:none">{{ e.status }}</div>
+                      </div>
+                      <div style="font-size:12.5px;line-height:1.5;color:#444141;margin-top:5px">{{ e.prompt }}</div>
+                      <div style="font-size:11.5px;line-height:1.5;color:#605d5d;font-style:italic;margin-top:2px">{{ e.promptEn }}</div>
+                      <sc-if value="{{ e.live }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top:10px">
+                          <svg viewBox="0 0 320 62" preserveAspectRatio="none" style="width:100%;height:62px;display:block;border:1px solid rgba(32,31,29,.16);border-radius:3px;background:#f8f4f4">
+                            <polyline points="{{ traceA }}" fill="none" stroke="#7d5411" stroke-width="1.2"></polyline>
+                            <polyline points="{{ traceB }}" fill="none" stroke="#bab6b6" stroke-width="1"></polyline>
+                          </svg>
+                          <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#605d5d;font-variant-numeric:tabular-nums;margin-top:4px">
+                            <span>{{ liveMeta }}</span><span>{{ livePct }}</span>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ e.canStart }}" hint-placeholder-val="{{ true }}">
+                        <button onClick="{{ e.start }}" style="width:100%;min-height:46px;margin-top:10px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:14px;color:#7d5411" style-hover="background:#fff3e4">{{ e.cta }}</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <button onClick="{{ replaySession }}" style="width:100%;min-height:44px;margin-top:14px;border:1px dashed rgba(32,31,29,.32);background:transparent;border-radius:4px;font-size:12.5px;color:#605d5d" style-hover="background:#eae9e9">Load saved session (demo replay)</button>
+
+                <div style="display:flex;gap:8px;margin-top:14px">
+                  <button onClick="{{ back }}" style="flex:1;min-height:50px;border:1px solid rgba(32,31,29,.28);background:transparent;border-radius:4px;font-size:14px;color:#444141" style-hover="background:#eae9e9">Back</button>
+                  <button onClick="{{ next }}" style="flex:2;min-height:50px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:15px;color:#7d5411" style-hover="background:#fff3e4">{{ analyseCta }}</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ atAnalyse }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:26px 18px">
+                <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Step 4 · On-device analysis</div>
+                <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:27px;margin:6px 0 14px">Interpreting the signals</h2>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <sc-for list="{{ analysisSteps }}" as="s" hint-placeholder-count="5">
+                    <div style="display:flex;gap:11px;align-items:flex-start">
+                      <span style="flex:none;width:9px;height:9px;margin-top:6px;border-radius:50%;border:1px solid #7d5411"></span>
+                      <div>
+                        <div style="font-size:14px">{{ s.label }}</div>
+                        <div style="font-size:11.5px;color:#605d5d;font-variant-numeric:tabular-nums">{{ s.detail }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="height:1px;background:rgba(32,31,29,.16);margin:18px 0"></div>
+                <div style="font-size:12.5px;line-height:1.6;color:#444141">Everything above runs locally: features are computed on the ESP32, the gradient-boosted risk model (184 KB, TFLite) runs on the phone. No image or audio leaves the device — only 96 bytes of features per channel-second.</div>
+                <button onClick="{{ next }}" style="width:100%;min-height:50px;margin-top:20px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:15px;color:#7d5411" style-hover="background:#fff3e4">View report</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ atReport }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:20px 16px">
+                <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Step 5 · Report</div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:6px">
+                  <div>
+                    <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:26px;margin:0">{{ reportName }}</h2>
+                    <div style="font-size:11.5px;color:#605d5d;font-variant-numeric:tabular-nums">{{ reportMeta }}</div>
+                  </div>
+                  <div style="text-align:right;flex:none">
+                    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:46px;line-height:.9;font-variant-numeric:tabular-nums">{{ score }}</div>
+                    <div style="font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d">risk index / 100</div>
+                  </div>
+                </div>
+
+                <div style="margin-top:14px;padding:13px;border:1px solid #b68235;border-radius:4px;background:#fff3e4">
+                  <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411">{{ bandLabel }}</div>
+                  <div style="font-size:13.5px;line-height:1.55;color:#5a3b0a;margin-top:5px">{{ bandNote }}</div>
+                  <div style="font-size:11.5px;color:#7d5411;margin-top:7px;font-variant-numeric:tabular-nums">Model confidence {{ confidence }} · {{ trackLabel }}</div>
+                </div>
+
+                <div style="height:1px;background:rgba(32,31,29,.16);margin:18px 0 14px"></div>
+                <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#605d5d;margin-bottom:9px">Per-channel findings</div>
+                <div style="display:flex;flex-direction:column;gap:9px">
+                  <sc-for list="{{ findings }}" as="f" hint-placeholder-count="6">
+                    <div style="display:flex;gap:10px;align-items:flex-start;padding-bottom:9px;border-bottom:1px solid rgba(32,31,29,.1)">
+                      <span style="flex:none;width:10px;height:10px;margin-top:5px;border-radius:50%;border:1px solid #7d5411;background:{{ f.dot }}"></span>
+                      <div style="flex:1">
+                        <div style="display:flex;justify-content:space-between;gap:8px">
+                          <span style="font-size:13.5px">{{ f.name }}</span>
+                          <span style="font-size:13px;color:#7d5411;font-variant-numeric:tabular-nums;flex:none">{{ f.value }}</span>
+                        </div>
+                        <div style="font-size:11.5px;line-height:1.45;color:#605d5d">{{ f.note }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#605d5d;margin:18px 0 9px">Guidance for the patient</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <sc-for list="{{ advice }}" as="a" hint-placeholder-count="4">
+                    <div style="display:flex;gap:9px;align-items:flex-start">
+                      <span style="flex:none;font-family:'Cormorant Garamond',Georgia,serif;color:#7d5411;font-size:13px">—</span>
+                      <span style="font-size:12.5px;line-height:1.55;color:#444141">{{ a.text }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:20px">
+                  <button onClick="{{ openSlip }}" style="flex:1;min-height:50px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:14px;color:#7d5411" style-hover="background:#fff3e4">Referral slip</button>
+                  <button onClick="{{ saveAndQueue }}" style="flex:1;min-height:50px;border:1px solid rgba(32,31,29,.28);background:transparent;border-radius:4px;font-size:14px;color:#444141" style-hover="background:#eae9e9">Save &amp; next patient</button>
+                </div>
+                <div style="font-size:11px;line-height:1.5;color:#605d5d;margin-top:12px">Screening aid only. Not a diagnosis of osteoarthritis — confirmation requires clinical examination and, where indicated, radiography.</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="border-top:1px solid rgba(32,31,29,.16);padding:9px 16px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d">
+            <span>{{ stepTrail }}</span><span style="font-variant-numeric:tabular-nums">{{ workerTrail }}</span>
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="flex:1;min-width:340px;display:flex;flex-direction:column;gap:20px">
+      <div style="border:1px solid rgba(32,31,29,.16);border-radius:4px;padding:20px 22px;background:#f3f2f2">
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Under the hood · {{ pipeStep }}</div>
+        <h3 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:24px;margin:7px 0 12px">{{ pipeTitle }}</h3>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <sc-for list="{{ pipeLines }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <span style="flex:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#7d5411;width:78px;padding-top:2px">{{ p.tier }}</span>
+              <span style="font-size:13px;line-height:1.6;color:#302f2d">{{ p.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(32,31,29,.16);border-radius:4px;padding:20px 22px">
+        <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">System design</div>
+        <h3 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:24px;margin:7px 0 14px">Three tiers, one record</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+          <div style="border-left:1px solid #b68235;padding-left:12px">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d">Sensor edge</div>
+            <div style="font-size:12.5px;line-height:1.55;margin-top:5px;color:#302f2d">ESP32 · 2× INMP441 VAG mics · MPU6050 on shank · HX711 load cell. Framing, band RMS and MFCC at 100 ms hops on-chip; only features go over BLE.</div>
+          </div>
+          <div style="border-left:1px solid #b68235;padding-left:12px">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d">Phone edge</div>
+            <div style="font-size:12.5px;line-height:1.55;margin-top:5px;color:#302f2d">Android app, TFLite GBT model (184 KB), SQLite WAL store, per-patient encryption. Full screening works with the radio off.</div>
+          </div>
+          <div style="border-left:1px solid #b68235;padding-left:12px">
+            <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#605d5d">PHC / district</div>
+            <div style="font-size:12.5px;line-height:1.55;margin-top:5px;color:#302f2d">Delta sync on reconnect, conflict-free by device+timestamp keys. Supervisor dashboard, referral tracking, model retraining set.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDash }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+        <div style="border:1px solid rgba(32,31,29,.16);border-radius:4px;padding:16px 18px">
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#605d5d">{{ k.label }}</div>
+          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;line-height:1.05;margin-top:4px;font-variant-numeric:tabular-nums">{{ k.value }}</div>
+          <div style="font-size:11.5px;color:#7d5411">{{ k.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:320px;border:1px solid rgba(32,31,29,.16);border-radius:4px;padding:18px 20px">
+        <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411">Risk distribution · last 30 days</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+          <sc-for list="{{ dist }}" as="d" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;font-variant-numeric:tabular-nums"><span>{{ d.label }}</span><span style="color:#7d5411">{{ d.count }}</span></div>
+              <div style="height:8px;margin-top:5px;border:1px solid rgba(32,31,29,.22);border-radius:2px;overflow:hidden">
+                <div style="height:100%;background:#e1ad66;width:{{ d.pct }}"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:1px;background:rgba(32,31,29,.16);margin:18px 0 12px"></div>
+        <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411;margin-bottom:9px">Flag frequency by channel</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <sc-for list="{{ chanFreq }}" as="c" hint-placeholder-count="5">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#302f2d;font-variant-numeric:tabular-nums;padding-bottom:6px;border-bottom:1px solid rgba(32,31,29,.1)"><span>{{ c.name }}</span><span style="color:#7d5411">{{ c.pct }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex:1.4;min-width:420px;border:1px solid rgba(32,31,29,.16);border-radius:4px;padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411">Recent screenings</div>
+          <div style="font-size:11px;color:#605d5d">{{ dashSync }}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:12px;font-variant-numeric:tabular-nums">
+          <thead>
+            <tr>
+              <th style="text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;padding:0 8px 8px 0;border-bottom:1px solid rgba(32,31,29,.28)">Patient</th>
+              <th style="text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;padding:0 8px 8px 0;border-bottom:1px solid rgba(32,31,29,.28)">Camp</th>
+              <th style="text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;padding:0 8px 8px 0;border-bottom:1px solid rgba(32,31,29,.28)">Index</th>
+              <th style="text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;padding:0 8px 8px 0;border-bottom:1px solid rgba(32,31,29,.28)">Track</th>
+              <th style="text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;padding:0 0 8px;border-bottom:1px solid rgba(32,31,29,.28)">State</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+              <tr>
+                <td style="font-size:13px;padding:9px 8px 9px 0;border-bottom:1px solid rgba(32,31,29,.1)">{{ r.name }}</td>
+                <td style="font-size:12.5px;color:#605d5d;padding:9px 8px 9px 0;border-bottom:1px solid rgba(32,31,29,.1)">{{ r.camp }}</td>
+                <td style="font-size:13px;text-align:right;color:#7d5411;padding:9px 8px 9px 0;border-bottom:1px solid rgba(32,31,29,.1)">{{ r.index }}</td>
+                <td style="font-size:12.5px;padding:9px 8px 9px 0;border-bottom:1px solid rgba(32,31,29,.1)">{{ r.track }}</td>
+                <td style="font-size:11.5px;color:#605d5d;padding:9px 0;border-bottom:1px solid rgba(32,31,29,.1)">{{ r.state }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:18px">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411;margin-bottom:8px">Device fleet</div>
+            <sc-for list="{{ devices }}" as="d" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#302f2d;padding:5px 0;border-bottom:1px solid rgba(32,31,29,.1)"><span>{{ d.name }}</span><span style="color:#7d5411;font-variant-numeric:tabular-nums">{{ d.state }}</span></div>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d5411;margin-bottom:8px">Data governance</div>
+            <div style="font-size:12.5px;line-height:1.6;color:#302f2d">Records stay pseudonymous on device (ABHA ID hashed locally). Raw audio is discarded after feature extraction; consent is captured per screening and revocable at the PHC.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ slipOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(32,31,29,.42);display:flex;align-items:center;justify-content:center;padding:32px;z-index:40">
+      <div style="width:min(520px,100%);max-height:88vh;overflow:auto;background:#f3f2f2;border:1px solid rgba(32,31,29,.28);border-radius:4px;padding:30px 32px;box-shadow:0 12px 32px rgba(45,43,43,.22)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid rgba(32,31,29,.28);padding-bottom:12px">
+          <div>
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7d5411">Referral slip · OA screening</div>
+            <h3 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:27px;margin:5px 0 0">{{ reportName }}</h3>
+          </div>
+          <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;line-height:1;font-variant-numeric:tabular-nums">{{ score }}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+          <sc-for list="{{ slipRows }}" as="s" hint-placeholder-count="6">
+            <div style="display:flex;gap:14px;font-size:13px">
+              <span style="flex:none;width:132px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#605d5d;padding-top:3px">{{ s.k }}</span>
+              <span style="line-height:1.55;color:#302f2d">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(32,31,29,.16);font-size:11.5px;line-height:1.6;color:#605d5d">Carry this slip to the referral facility. Screening aid only — not a diagnosis. Generated offline; the digital copy syncs to the PHC when a network is available.</div>
+        <div style="display:flex;gap:8px;margin-top:20px">
+          <button onClick="{{ printSlip }}" style="flex:1;min-height:46px;border:1px solid #b68235;background:transparent;border-radius:4px;font-size:14px;color:#7d5411" style-hover="background:#fff3e4">Print / save PDF</button>
+          <button onClick="{{ closeSlip }}" style="flex:1;min-height:46px;border:1px solid rgba(32,31,29,.28);background:transparent;border-radius:4px;font-size:14px;color:#444141" style-hover="background:#eae9e9">Close</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;campName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Ri-Bhoi PHC camp&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Deployment&quot;}}">
+const LANGS = [
+  { id: 'en', name: 'English', cov: '100%' },
+  { id: 'as', name: 'অসমীয়া · Assamese', cov: '100%' },
+  { id: 'hi', name: 'हिन्दी · Hindi', cov: '100%' },
+  { id: 'brx', name: 'बड़ो · Bodo', cov: 'in review' },
+  { id: 'mni', name: 'ময়েক · Meitei', cov: 'in review' },
+  { id: 'kha', name: 'Khasi', cov: 'in review' },
+  { id: 'lus', name: 'Mizo', cov: 'in review' },
+  { id: 'trp', name: 'Kokborok', cov: 'in review' }
+];
+
+const QUESTIONS = [
+  { id: 'age', en: 'Age band', opts: ['Under 40', '40–49', '50–59', '60 and above'], w: [0, 6, 14, 20] },
+  { id: 'sex', en: 'Sex', opts: ['Female', 'Male'], w: [3, 0],
+    t: { hi: { q: 'लिंग', o: ['महिला', 'पुरुष'] }, as: { q: 'লিঙ্গ', o: ['মহিলা', 'পুৰুষ'] } } },
+  { id: 'build', en: 'Body build', opts: ['Lean', 'Average', 'Overweight', 'Obese'], w: [0, 4, 10, 16],
+    t: { hi: { q: 'शारीरिक गठन', o: ['दुबला', 'सामान्य', 'अधिक वज़न', 'मोटापा'] }, as: { q: 'শাৰীৰিক গঠন', o: ['পাতল', 'সাধাৰণ', 'অধিক ওজন', 'স্থূল'] } } },
+  { id: 'pain', en: 'Knee pain in the past month', opts: ['None', 'Mild', 'Moderate', 'Severe'], w: [0, 8, 16, 26],
+    t: { hi: { q: 'पिछले महीने घुटने में दर्द', o: ['नहीं', 'हल्का', 'मध्यम', 'तेज़'] }, as: { q: 'যোৱা মাহত আঁঠুৰ বিষ', o: ['নাই', 'লঘু', 'মধ্যম', 'তীব্ৰ'] } } },
+  { id: 'stiff', en: 'Morning stiffness', opts: ['None', 'Under 10 min', '10–30 min', 'Over 30 min'], w: [0, 4, 10, 16],
+    t: { hi: { q: 'सुबह जोड़ों में जकड़न', o: ['नहीं', '10 मिनट से कम', '10–30 मिनट', '30 मिनट से ज़्यादा'] }, as: { q: 'ৰাতিপুৱা গাঁঠি সাৰ লগা', o: ['নাই', '১০ মিনিটতকৈ কম', '১০–৩০ মিনিট', '৩০ মিনিটতকৈ অধিক'] } } },
+  { id: 'crep', en: 'Grinding or clicking in the knee', opts: ['No', 'Sometimes', 'Often'], w: [0, 6, 12],
+    t: { hi: { q: 'घुटने में किटकिट या आवाज़', o: ['नहीं', 'कभी-कभी', 'अक्सर'] }, as: { q: 'আঁঠুত কটকট শব্দ', o: ['নাই', 'কেতিয়াবা', 'সঘনে'] } } },
+  { id: 'load', en: 'Daily physical load', opts: ['Desk work', 'Household', 'Farm & hill walking', 'Head-load carrying'], w: [0, 3, 8, 12],
+    t: { hi: { q: 'रोज़ का शारीरिक श्रम', o: ['डेस्क कार्य', 'घर का काम', 'खेत व पहाड़ी चलना', 'सिर पर बोझ ढोना'] }, as: { q: 'দৈনিক শাৰীৰিক পৰিশ্ৰম', o: ['ডেস্কৰ কাম', 'ঘৰুৱা কাম', 'খেতি আৰু পাহাৰত খোজকঢ়া', 'মূৰত বোজা কঢ়িওৱা'] } } },
+  { id: 'diff', en: 'Activities that feel hard (choose any)', multi: true, opts: ['Squatting', 'Stairs', 'Sitting cross-legged', 'Walking 1 km'], w: [3, 3, 3, 3],
+    t: { hi: { q: 'कठिन लगने वाले काम (कोई भी चुनें)', o: ['उकड़ूँ बैठना', 'सीढ़ियाँ', 'पालथी मारकर बैठना', '1 कि.मी. चलना'] }, as: { q: 'কঠিন লাগা কামবোৰ (যিকোনো বাছনি কৰক)', o: ['আঁঠু ভাঁজ কৰি বহা', 'জখলা', 'পলথী মাৰি বহা', '১ কি.মি. খোজকঢ়া'] } } },
+  { id: 'injury', en: 'Past knee injury', opts: ['No', 'Yes'], w: [0, 8],
+    t: { hi: { q: 'पहले घुटने में चोट', o: ['नहीं', 'हाँ'] }, as: { q: 'আগতে আঁঠুত আঘাত', o: ['নাই', 'হয়'] } } }
+];
+QUESTIONS[0].t = { hi: { q: 'आयु वर्ग', o: ['40 से कम', '40–49', '50–59', '60 और अधिक'] }, as: { q: 'বয়সৰ শ্ৰেণী', o: ['৪০ৰ তলত', '৪০–৪৯', '৫০–৫৯', '৬০ আৰু অধিক'] } };
+
+const EX0 = [
+  { id: 'sts', title: '5× sit-to-stand', s: 4200,
+    p: { en: 'Phone in the hip pocket. Stand up and sit down five times, at your own pace, arms folded.', hi: 'फ़ोन कमर की जेब में रखें। अपनी गति से पाँच बार उठें और बैठें, हाथ छाती पर।', as: 'ফোনটো কঁকালৰ জেপত ৰাখক। নিজৰ গতিত পাঁচবাৰ উঠক আৰু বহক, হাত বুকুত।' },
+    meta: 'Phone accelerometer · 100 Hz' },
+  { id: 'tug', title: 'Timed up-and-go (3 m)', s: 3600,
+    p: { en: 'Stand, walk three metres to the mark, turn, come back and sit.', hi: 'खड़े हों, तीन मीटर चलकर निशान तक जाएँ, मुड़ें, वापस आकर बैठें।', as: 'উঠি তিনি মিটাৰ খোজ কাঢ়ি চিহ্নলৈ যাওক, ঘূৰি আহি বহক।' },
+    meta: 'Gait timing + trunk sway' },
+  { id: 'stance', title: 'Single-leg stance', s: 3000,
+    p: { en: 'Hold the wall lightly. Stand on one leg for ten seconds, then the other.', hi: 'दीवार को हल्के से पकड़ें। दस सेकंड एक पैर पर खड़े हों, फिर दूसरे पर।', as: 'দিৱালত লাহে ধৰক। দহ চেকেণ্ড এখন ভৰিত থিয় হৈ থাকক, তাৰ পিছত আনখনত।' },
+    meta: 'Postural sway envelope' }
+];
+const EX1 = [
+  { id: 'vag', title: 'Seated knee flexion–extension', s: 5000,
+    p: { en: 'Mics taped either side of the kneecap. Straighten and bend the knee slowly, ten times.', hi: 'माइक घुटने के दोनों ओर लगे हैं। घुटना धीरे-धीरे दस बार सीधा करें और मोड़ें।', as: 'মাইকবোৰ আঁঠুৰ দুয়োকাষে লগোৱা আছে। আঁঠু লাহে লাহে দহবাৰ পোন কৰক আৰু ভাঁজ কৰক।' },
+    meta: 'VAG medial + lateral · 4 kHz' },
+  { id: 'sts1', title: '5× sit-to-stand on load cell', s: 4400,
+    p: { en: 'Both feet on the plate. Stand and sit five times without pushing with your hands.', hi: 'दोनों पैर प्लेट पर रखें। हाथों का सहारा बिना पाँच बार उठें-बैठें।', as: 'দুয়োখন ভৰি প্লেটত ৰাখক। হাতৰ সহায় নোলোৱাকৈ পাঁচবাৰ উঠক-বহক।' },
+    meta: 'HX711 load cell + shank IMU' },
+  { id: 'gait', title: 'Ten-metre walk', s: 4000,
+    p: { en: 'Walk ten metres at your usual pace with the strap on your shin.', hi: 'पिंडली पर पट्टी लगाकर अपनी सामान्य गति से दस मीटर चलें।', as: 'ভৰিৰ আগত পটি লগাই সাধাৰণ গতিত দহ মিটাৰ খোজ কাঢ়ক।' },
+    meta: 'MPU6050 shank · 200 Hz' }
+];
+
+class Component extends DCLogic {
+  state = {
+    view: 'app', lang: 'en', mode: 'signin', signedIn: false, step: 0,
+    workerId: 'ASHA-ML-2731', pin: '••••', facility: 'Ri-Bhoi PHC camp',
+    online: false, langsOpen: false, slipOpen: false,
+    tier: 'tier1', answers: {}, pName: 'Bidyawati Kharkongor',
+    rec: null, prog: 0, done: {}, replayed: false, doneCount: 7
+  };
+
+  componentWillUnmount() { if (this.timer) clearInterval(this.timer); }
+
+  t(map) {
+    if (!map) return null;
+    return map[this.state.lang] || null;
+  }
+
+  set(k, v) { this.setState({ [k]: v }); }
+
+  pickOpt(q, i) {
+    const a = Object.assign({}, this.state.answers);
+    if (q.multi) {
+      const cur = Array.isArray(a[q.id]) ? a[q.id].slice() : [];
+      const at = cur.indexOf(i);
+      if (at >= 0) cur.splice(at, 1); else cur.push(i);
+      a[q.id] = cur;
+    } else a[q.id] = i;
+    this.setState({ answers: a });
+  }
+
+  qScore() {
+    let sum = 0, answered = 0;
+    QUESTIONS.forEach(q => {
+      const v = this.state.answers[q.id];
+      if (v === undefined) return;
+      answered++;
+      if (q.multi) v.forEach(i => { sum += q.w[i]; });
+      else sum += q.w[v];
+    });
+    return { sum, answered, norm: Math.min(100, Math.round(sum / 1.22)) };
+  }
+
+  exList() { return this.state.tier === 'tier1' ? EX1 : EX0; }
+
+  startEx(ex) {
+    if (this.timer) clearInterval(this.timer);
+    this.setState({ rec: ex.id, prog: 0 });
+    const t0 = Date.now();
+    this.timer = setInterval(() => {
+      const p = Math.min(1, (Date.now() - t0) / ex.s);
+      if (p >= 1) {
+        clearInterval(this.timer); this.timer = null;
+        const done = Object.assign({}, this.state.done); done[ex.id] = true;
+        this.setState({ rec: null, prog: 0, done });
+      } else this.setState({ prog: p });
+    }, 60);
+  }
+
+  trace(phase, amp, wob) {
+    const p = this.state.prog, pts = [];
+    for (let x = 0; x <= 160; x++) {
+      const f = x / 160;
+      if (f > p) break;
+      const env = 0.55 + 0.45 * Math.sin(f * Math.PI * 5 + phase);
+      const y = 31 - amp * env * Math.sin(f * Math.PI * 46 + phase) - wob * Math.sin(f * Math.PI * 9.3);
+      pts.push((x * 2).toFixed(0) + ',' + y.toFixed(1));
+    }
+    return pts.join(' ');
+  }
+
+  allCaptured() {
+    if (this.state.replayed) return true;
+    return this.exList().every(e => this.state.done[e.id]);
+  }
+
+  result() {
+    const q = this.qScore();
+    const sensor = this.state.tier === 'tier1' ? 68 : 54;
+    const captured = this.allCaptured();
+    const score = captured ? Math.round(q.norm * 0.65 + sensor * 0.35) : q.norm;
+    const band = score >= 60 ? 'high' : score >= 30 ? 'mod' : 'low';
+    return { q, score, band, captured, sensor };
+  }
+
+  renderVals() {
+    const s = this.state, r = this.result(), tier1 = s.tier === 'tier1';
+    const step = s.step;
+    const lang = LANGS.find(l => l.id === s.lang) || LANGS[0];
+
+    const questions = QUESTIONS.map((q, qi) => {
+      const tr = this.t(q.t);
+      const cur = s.answers[q.id];
+      return {
+        num: String(qi + 1).padStart(2, '0'),
+        label: tr ? tr.q : q.en,
+        en: tr ? q.en : '',
+        opts: q.opts.map((o, i) => ({
+          label: tr && tr.o[i] ? tr.o[i] : o,
+          sel: q.multi ? Array.isArray(cur) && cur.indexOf(i) >= 0 : cur === i,
+          pick: () => this.pickOpt(q, i)
+        }))
+      };
+    });
+
+    const exercises = this.exList().map(e => {
+      const live = s.rec === e.id;
+      const done = !!s.done[e.id] || s.replayed;
+      const pr = e.p[s.lang] || e.p.en;
+      return {
+        title: e.title,
+        prompt: pr,
+        promptEn: pr === e.p.en ? '' : e.p.en,
+        status: done ? 'captured' : live ? 'recording' : 'pending',
+        live, canStart: !live,
+        cta: done ? 'Record again' : 'Start recording',
+        start: () => this.startEx(e)
+      };
+    });
+
+    const channels = tier1 ? [
+      { name: 'INMP441 medial (VAG)', state: s.online ? 'BLE linked' : 'BLE linked' },
+      { name: 'INMP441 lateral (VAG)', state: 'BLE linked' },
+      { name: 'MPU6050 shank IMU', state: 'BLE linked' },
+      { name: 'HX711 load cell', state: 'tared 0.0 kg' },
+      { name: 'ESP32 node battery', state: '78%' }
+    ] : [
+      { name: 'Phone accelerometer', state: '100 Hz' },
+      { name: 'Phone gyroscope', state: '100 Hz' },
+      { name: 'Stopwatch / timing', state: 'ready' },
+      { name: 'Sensor kit', state: 'not connected' }
+    ];
+
+    const findings = tier1 ? [
+      { name: 'VAG medial band RMS', value: '34.2 dB', note: 'Peak clustered at 38–46° flexion — crepitus-consistent.', dot: '#c28d41' },
+      { name: 'VAG lateral band RMS', value: '28.6 dB', note: 'Within reference range for age band.', dot: 'transparent' },
+      { name: 'Shank peak angular velocity', value: '121 °/s', note: 'Below the 145 °/s median for this age band.', dot: '#e1ad66' },
+      { name: 'Sit-to-stand force asymmetry', value: '18 %', note: 'Right-side loading dominant; above the 12% threshold.', dot: '#7d5411' },
+      { name: '5× sit-to-stand time', value: '14.8 s', note: 'Slower than the 12 s functional cut-off.', dot: '#e1ad66' },
+      { name: 'Questionnaire subscore', value: r.q.norm + ' / 100', note: r.q.answered + ' of 9 items answered.', dot: '#c28d41' }
+    ] : [
+      { name: '5× sit-to-stand time', value: '15.6 s', note: 'Slower than the 12 s functional cut-off.', dot: '#e1ad66' },
+      { name: 'Timed up-and-go', value: '13.1 s', note: 'Elevated; mobility limitation likely.', dot: '#c28d41' },
+      { name: 'Single-leg stance', value: '6.4 s', note: 'Reduced on the right side.', dot: '#e1ad66' },
+      { name: 'Trunk sway envelope', value: '4.8 °', note: 'Compensatory sway during transfer.', dot: 'transparent' },
+      { name: 'Questionnaire subscore', value: r.q.norm + ' / 100', note: r.q.answered + ' of 9 items answered.', dot: '#c28d41' }
+    ];
+
+    const bandLabel = r.band === 'high' ? 'High risk · case-finding track'
+      : r.band === 'mod' ? 'Moderate risk · risk track' : 'Low risk · advisory only';
+    const bandNote = r.band === 'high'
+      ? 'Refer to the district hospital orthopaedic OPD within four weeks. Weight-bearing knee radiograph advised at referral.'
+      : r.band === 'mod'
+      ? 'Enrol in the six-week supervised exercise track. Re-screen in three months; refer earlier if pain worsens.'
+      : 'No referral indicated. Give joint-care guidance and re-screen at the next camp visit.';
+    const trackLabel = r.captured ? (tier1 ? 'Tier 1 sensor evidence' : 'Tier 0 phone evidence') : 'questionnaire only';
+
+    const advice = r.band === 'low' ? [
+      { text: 'Keep walking daily; add a short warm-up before hill work.' },
+      { text: 'Quadriceps strengthening twice a week — the sheet on page 2 shows four movements.' },
+      { text: 'Keep weight stable; protein at each meal supports muscle around the joint.' },
+      { text: 'Return for re-screening at the next camp.' }
+    ] : [
+      { text: 'Reduce deep squatting and prolonged cross-legged sitting; use a low stool for household work.' },
+      { text: 'Split head-loads or use a back-carry frame where the terrain allows.' },
+      { text: 'Daily straight-leg raises and seated knee extensions, 2 sets of 10, both legs.' },
+      { text: 'Warm compress for morning stiffness; paracetamol as advised by the PHC medical officer.' },
+      { text: 'Aim to lose 3–5% body weight over six months if overweight.' }
+    ];
+
+    const pipe = [
+      { st: 'Onboarding', tt: 'Identity without a network',
+        l: [['device', 'Worker credentials are verified against a locally cached hash; no round-trip needed to start a camp.'],
+            ['device', 'A per-device key wraps the SQLite store, so a lost phone yields no readable records.'],
+            ['sync', 'New sign-ups queue as provisioning requests and clear at the next PHC handshake.']] },
+      { st: 'Screening list', tt: 'One worker, many patients, one day',
+        l: [['device', 'Each screening is an append-only record keyed by device ID + monotonic counter, so parallel patients never collide.'],
+            ['device', 'Partial screenings survive app kill — the questionnaire and captures are written as they happen.'],
+            ['sync', 'Delta sync ships only changed records; a day of 40 screenings is roughly 180 KB.']] },
+      { st: 'Questionnaire', tt: 'Structured intake, translated at the edge',
+        l: [['device', 'Nine weighted items derived from KOOS/WOMAC-style screening plus NER-specific load exposure (hill walking, head-loads).'],
+            ['device', 'Translation bundles ship with the APK; untranslated keys fall back to English rather than blanking.'],
+            ['model', 'Missing items reduce reported confidence instead of being imputed silently.']] },
+      { st: 'Guided tests', tt: 'Features on the sensor, not audio on the wire',
+        l: [['esp32', 'INMP441 pairs sample vibroarthrography at 4 kHz. The ESP32 frames 100 ms hops and computes band RMS, MFCCs and zero-crossing rate on-chip.'],
+            ['esp32', 'MPU6050 on the shank at 200 Hz gives flexion angle and peak angular velocity; HX711 gives per-limb force asymmetry across the five stands.'],
+            ['device', 'Only feature vectors cross BLE — about 96 bytes per channel-second. Raw audio is discarded at the node.'],
+            ['device', 'Tier 0 keeps the whole flow usable with no kit at all, using phone IMU timing alone.']] },
+      { st: 'Analysis', tt: 'Inference on the phone',
+        l: [['model', 'Gradient-boosted trees (184 KB TFLite) over 34 features: acoustic, kinematic, force and questionnaire blocks.'],
+            ['model', 'Angle-binned acoustic RMS is the strongest single sensor feature; the questionnaire block carries 65% of the index when sensors are absent.'],
+            ['device', 'Inference takes about 40 ms — no connectivity, no server call, no cloud dependency.']] },
+      { st: 'Report', tt: 'A decision the worker can act on',
+        l: [['device', 'Two tracks only: risk track (exercise + re-screen) or case-finding track (referral). Ambiguity is resolved upward.'],
+            ['device', 'Referral slip renders and prints offline; the digital copy carries the same record ID.'],
+            ['sync', 'On reconnect the record, features and outcome flow to the PHC dashboard and the retraining set.']] }
+    ];
+    const pi = Math.min(pipe.length - 1, step);
+    const pl = pipe[pi];
+
+    const analysisSteps = [
+      { label: 'Feature vectors received', detail: tier1 ? '4 channels · 1,284 frames · 34 features' : '2 channels · 620 frames · 19 features' },
+      { label: 'Angle-binned acoustic RMS', detail: tier1 ? 'peak bin 38–46° · 34.2 dB' : 'not available in Tier 0' },
+      { label: 'Kinematic + force block', detail: tier1 ? 'asymmetry 18% · peak ω 121 °/s' : 'STS 15.6 s · TUG 13.1 s' },
+      { label: 'Questionnaire block', detail: r.q.answered + ' of 9 items · subscore ' + r.q.norm },
+      { label: 'GBT inference (TFLite, on device)', detail: '184 KB model · 41 ms · confidence ' + (r.captured ? '0.81' : '0.62') }
+    ];
+
+    return {
+      isApp: s.view === 'app', isDash: s.view === 'dash',
+      showApp: () => this.set('view', 'app'), showDash: () => this.set('view', 'dash'),
+
+      langShort: lang.id.toUpperCase(),
+      langList: LANGS.map(l => ({ name: l.name, cov: l.cov, sel: l.id === s.lang, pick: () => this.setState({ lang: l.id, langsOpen: false }) })),
+      langsOpen: s.langsOpen,
+      langPending: !!(lang.cov === 'in review'),
+      toggleLangs: () => this.set('langsOpen', !s.langsOpen),
+      netLabel: s.online ? 'Online · syncing' : 'Offline mode',
+      toggleOnline: () => this.set('online', !s.online),
+
+      atSignIn: !s.signedIn, atQueue: s.signedIn && step === 1, atForm: s.signedIn && step === 2,
+      atCapture: s.signedIn && step === 3, atAnalyse: s.signedIn && step === 4, atReport: s.signedIn && step === 5,
+
+      isSignUp: s.mode === 'signup',
+      authTitle: s.mode === 'signup' ? 'Create a worker account' : 'Sign in to today’s camp',
+      authCta: s.mode === 'signup' ? 'Create account' : 'Sign in',
+      authSwitch: s.mode === 'signup' ? 'I already have an account' : 'New worker — create an account',
+      toggleAuthMode: () => this.set('mode', s.mode === 'signup' ? 'signin' : 'signup'),
+      doAuth: () => this.setState({ signedIn: true, step: 1 }),
+      workerId: s.workerId, pin: s.pin, facility: s.facility,
+      setWorkerId: e => this.set('workerId', e.target.value),
+      setPin: e => this.set('pin', e.target.value),
+      setFacility: e => this.set('facility', e.target.value),
+
+      campName: this.props.campName ?? s.facility,
+      doneCount: s.doneCount,
+      queue: [
+        { name: 'Bidyawati Kharkongor', meta: '58 · F · Umsning', status: 'in progress' },
+        { name: 'Lalthanmawia Ralte', meta: '61 · M · Umsning', status: 'queued' },
+        { name: 'Ronaldo Sangma', meta: '47 · M · Nongpoh', status: 'high risk · referred' },
+        { name: 'Mainao Basumatary', meta: '52 · F · Nongpoh', status: 'moderate · synced' }
+      ],
+      syncLine: s.online ? '11 records uploading over the camp hotspot. Last handshake 2 minutes ago.' : '11 records held on device. They upload on their own when a network appears — nothing is lost.',
+      startNew: () => this.setState({ step: 2, answers: {}, done: {}, replayed: false }),
+
+      questions, pName: s.pName, setPName: e => this.set('pName', e.target.value),
+
+      isTier0: !tier1, isTier1: tier1,
+      pickTier0: () => this.setState({ tier: 'tier0', done: {}, replayed: false }),
+      pickTier1: () => this.setState({ tier: 'tier1', done: {}, replayed: false }),
+      kitTitle: tier1 ? 'Sensor node · ESP32 kit' : 'Phone sensors only',
+      channels, exercises,
+      traceA: this.trace(0, 17, 4), traceB: this.trace(1.7, 9, 2),
+      liveMeta: tier1 ? 'VAG 4 kHz · IMU 200 Hz · features streaming' : 'Phone IMU 100 Hz · features streaming',
+      livePct: Math.round(s.prog * 100) + '%',
+      replaySession: () => this.setState({ replayed: true, rec: null }),
+      analyseCta: this.allCaptured() ? 'Analyse' : 'Analyse with what we have',
+
+      analysisSteps,
+
+      score: r.score, bandLabel, bandNote, trackLabel,
+      confidence: r.captured ? '0.81' : '0.62',
+      reportName: s.pName || 'Unnamed patient',
+      reportMeta: 'REC-' + (2731 + s.doneCount) + ' · ' + s.facility + ' · ' + (tier1 ? 'Tier 1' : 'Tier 0'),
+      findings, advice,
+      openSlip: () => this.set('slipOpen', true),
+      closeSlip: () => this.set('slipOpen', false),
+      printSlip: () => window.print(),
+      slipOpen: s.slipOpen,
+      slipRows: [
+        { k: 'Record ID', v: 'REC-' + (2731 + s.doneCount) },
+        { k: 'Screened at', v: s.facility + ' · ' + (tier1 ? 'Tier 1 sensor kit' : 'Tier 0 phone only') },
+        { k: 'Risk index', v: r.score + ' / 100 — ' + bandLabel },
+        { k: 'Key markers', v: tier1 ? 'Angle-clustered crepitus at 38–46°, 18% loading asymmetry, 5×STS 14.8 s' : '5×STS 15.6 s, TUG 13.1 s, reduced right single-leg stance' },
+        { k: 'Action', v: bandNote },
+        { k: 'Screener', v: s.workerId + ' · guidance given in ' + lang.name }
+      ],
+      saveAndQueue: () => this.setState({ step: 1, doneCount: s.doneCount + 1, answers: {}, done: {}, replayed: false }),
+
+      back: () => this.set('step', Math.max(1, step - 1)),
+      next: () => this.set('step', Math.min(5, step + 1)),
+      stepTrail: ['Onboarding', 'Screening list', 'Questionnaire', 'Guided tests', 'Analysis', 'Report'][step] || 'Onboarding',
+      workerTrail: s.workerId,
+
+      pipeStep: pl.st, pipeTitle: pl.tt,
+      pipeLines: pl.l.map(x => ({ tier: x[0], text: x[1] })),
+
+      kpis: [
+        { label: 'Screened today', value: '34', note: 'across 2 camps' },
+        { label: 'High risk', value: '6', note: '4 referred, 2 pending' },
+        { label: 'Pending sync', value: '11', note: 'oldest 3 h 12 m' },
+        { label: 'Re-screens due', value: '19', note: 'next 30 days' }
+      ],
+      dist: [
+        { label: 'Low (0–29)', count: '142', pct: '54%' },
+        { label: 'Moderate (30–59)', count: '87', pct: '33%' },
+        { label: 'High (60+)', count: '34', pct: '13%' }
+      ],
+      chanFreq: [
+        { name: 'VAG medial RMS flagged', pct: '38%' },
+        { name: 'Load asymmetry > 12%', pct: '31%' },
+        { name: '5×STS > 12 s', pct: '44%' },
+        { name: 'Shank peak ω low', pct: '27%' },
+        { name: 'Questionnaire pain ≥ 4', pct: '52%' }
+      ],
+      dashSync: s.online ? 'live' : 'last sync 3 h 12 m ago',
+      rows: [
+        { name: 'Bidyawati Kharkongor', camp: 'Umsning', index: '71', track: 'Case-finding', state: 'referred · ortho OPD' },
+        { name: 'Lalthanmawia Ralte', camp: 'Umsning', index: '64', track: 'Case-finding', state: 'awaiting slip ack' },
+        { name: 'Mainao Basumatary', camp: 'Nongpoh', index: '48', track: 'Risk', state: 'exercise week 2' },
+        { name: 'Ronaldo Sangma', camp: 'Nongpoh', index: '39', track: 'Risk', state: 'exercise week 1' },
+        { name: 'Thangjam Ibemhal', camp: 'Bishnupur', index: '33', track: 'Risk', state: 're-screen in 3 mo' },
+        { name: 'Sanjib Deka', camp: 'Sonitpur', index: '22', track: 'Advisory', state: 'guidance given' },
+        { name: 'Kokrajhar camp · 4 records', camp: 'Kokrajhar', index: '—', track: '—', state: 'queued on device' }
+      ],
+      devices: [
+        { name: 'Phone ASHA-ML-2731', state: 'offline · 11 held' },
+        { name: 'ESP32 node #04', state: 'batt 78%' },
+        { name: 'ESP32 node #07', state: 'batt 31%' },
+        { name: 'Phone ASHA-KR-1188', state: 'synced 14 m' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
