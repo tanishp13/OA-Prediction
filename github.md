@@ -3,25 +3,26 @@ branch: main
 
 ## Last sync
 
-date: 2026-09-04T16:45:00Z
+date: 2026-09-04T17:05:00Z
 commit: 33f66a5d9b4d (tree hash from github_get_tree — not a verified commit sha)
 
-Imported the existing prototype (`OA Screening.dc.html`, `android-frame.jsx`, `support.js`, `_ds/`) and refactored it in place per the upgrade brief. Palette and all technical metadata (ESP32, TFLite GBT 184 KB, BLE, SQLite WAL encryption) preserved.
+Imported the existing prototype (`OA Screening.dc.html`, `support.js`, `_ds/`) and rebuilt it in place as a desktop-first web app. Removed the Android mobile-frame mockup entirely (`android-frame.jsx` deleted). All technical metadata (ESP32, TFLite GBT 184 KB, BLE, SQLite WAL encryption) preserved.
 
 ### Updated in this project
 
-- Added a rich landing page with hero, spec-sheet plate, value props, stats band and two role-entry cards (Field app / Supervisor).
-- Re-skinned to warm-classical colors + Industry blueprint structure (square corners, hairline frames, `+` registration marks); fonts switched to Cinzel / Newsreader / Space Mono.
-- Full-viewport (100dvh) shell with maximized side-by-side field-app + architecture layout.
-- Centralized JS translation dictionary; the entire mobile window re-renders instantly across 8 languages (EN/HI/AS verified, BN/BRX/MNI/KHA/LUS best-effort draft).
-- Input guards on Worker ID + 4-digit PIN with red outline, shake and localized inline error badges; real-time Offline / Syncing to PHC / Online network toggle.
+- Removed the simulated phone frame; field flow is now a full-width desktop workspace (main work area + contextual telemetry sidebar).
+- New warm editorial-clinical palette (#f6f4ee ground, #ffffff cards, #dfdbcd borders, #8c6d3b accent) on Industry blueprint structure; Cinzel / Newsreader / Space Mono.
+- Top nav: project metadata, EN/HI/AS/BN toggle, Local SQLite Mode · Ready to Sync badge, and Home / Field / Supervisor navigation.
+- 3-step field flow: camp sign-in (Worker ID + 4-digit PIN, New Worker toggle, validation) → patient intake (Patient ID, Age, Gender, Joint, VAS + clinical items) → edge inference (live signal acquisition, acoustic RMS / MFCC readouts, TFLite GBT risk score Low/Moderate/High).
+- "Under the Hood" + "System Design" moved into a telemetry sidebar that updates contextually per step; reactive EN/HI/AS/BN localization across the whole flow.
+- Landing page, supervisor dashboard and referral slip preserved and re-skinned.
 
 ## Screen map
 
 | Project screen | Repo files |
 |---|---|
 | OA Screening.dc.html — landing | (new; authored this project) |
-| OA Screening.dc.html — field app | OA Screening.dc.html, android-frame.jsx, support.js, _ds/ |
+| OA Screening.dc.html — field workspace (desktop) | OA Screening.dc.html, support.js, _ds/ |
 | OA Screening.dc.html — supervisor dashboard | OA Screening.dc.html, support.js, _ds/ |
 
 ## Sync history
