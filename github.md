@@ -27,4 +27,5 @@ Imported the existing prototype (`OA Screening.dc.html`, `support.js`, `_ds/`) a
 
 ## Sync history
 
+- 2026-09-04T16:45:00Z — mobile-frame refactor: landing page, blueprint re-skin, 8-language localization, validation.
 - 2026-09-04T00:00:00Z — initial import; repo prototype authored from build guide and sprint plan.
