@@ -59,6 +59,20 @@ Open `OA Screening.dc.html` directly in a browser — it's a self-contained mock
 - Field health-worker screening flow (patient registration, questionnaire, guided sensor capture, per-channel report, referral slip)
 - PHC/district supervisor dashboard (screening list, risk distribution, case tracking)
 
+## Running frontend and backend together
+
+On Windows, install the backend dependencies and run `start-local.ps1` from the project root:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r edge\requirements.txt
+.\start-local.ps1
+```
+
+This starts the FastAPI backend on `http://127.0.0.1:8000` and the frontend on `http://127.0.0.1:8080/OA%20Screening.dc.html`. The frontend is configured to connect to the backend automatically. Screening records are written first to `edge/oa_edge.db`, then remain queued until a configured cloud receiver acknowledges them.
+
+For production or Vercel, do not use the local SQLite file as the source of truth. Vercel deployments need a managed durable database or a separately hosted cloud receiver; configure `OA_CLOUD_ENDPOINT` and `OA_CLOUD_TOKEN` so the edge node forwards records and only marks them synced after a successful response.
+
 ## Limitations & honest scope
 
 - Crepitus (joint sound) occurs in some asymptomatic knees too, so **specificity is the acknowledged weak point** of the acoustic channel.

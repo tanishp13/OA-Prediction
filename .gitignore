@@ -1,0 +1,6 @@
+.venv/
+edge/oa_edge.db
+edge/oa_edge.db-shm
+edge/oa_edge.db-wal
+__pycache__/
+*.py[cod]
