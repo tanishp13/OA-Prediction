@@ -7,6 +7,9 @@ fallback) and the cloud sync worker, and serves the REST + WS API the frontend u
 Run:  uvicorn edge.main:app --reload --port 8000
 Then open the prototype and set its `backendUrl` tweak to http://127.0.0.1:8000
 """
+
+
+
 from __future__ import annotations
 
 import asyncio
@@ -27,6 +30,7 @@ from .schemas import (
     SystemStatus,
 )
 from .sync_worker import CLOUD_ENDPOINT, worker
+from edge.ml_service import engine
 
 app = FastAPI(title="OA·Sanjeevani Edge API", version="1.0.0")
 
@@ -171,3 +175,52 @@ async def ws_telemetry(ws: WebSocket):
         ws_manager.disconnect(ws)
     except Exception:
         ws_manager.disconnect(ws)
+
+@app.post("/api/sessions/stop")
+async def stop_session(payload: StopSessionRequest):
+    # 1. Fetch aggregated session metrics from SQLite or active memory
+    # (these variables should already be in your existing stop endpoint)
+    session_id = payload.session_id
+    cv_q_angle = payload.q_angle           # from CV intake
+    cv_varus = payload.varus_valgus_deg    # from CV intake
+    max_flex = aggregated_max_flexion      # from session telemetry
+    peak_force = aggregated_peak_force     # from session telemetry
+    crepitus_rms = aggregated_mean_rms     # from session telemetry
+    peak_freq = aggregated_peak_freq       # from session telemetry
+
+    # 2. Run inference via the ML engine
+    diagnostic_report = engine.predict(
+        q_angle=cv_q_angle,
+        varus_valgus_deg=cv_varus,
+        max_flexion_deg=max_flex,
+        peak_force_n=peak_force,
+        crepitus_rms=crepitus_rms,
+        crepitus_peak_freq=peak_freq
+    )
+
+    # 3. Update the session record in SQLite with the ML grade and risk
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            UPDATE screening_sessions 
+            SET status = 'COMPLETED',
+                ml_severity_grade = ?,
+                ml_confidence = ?,
+                risk_level = ?
+            WHERE session_id = ?
+            """,
+            (
+                diagnostic_report.get("severity_grade"),
+                diagnostic_report.get("confidence"),
+                diagnostic_report.get("risk_level"),
+                session_id
+            )
+        )
+        await db.commit()
+
+    # 4. Return the full report back to the frontend
+    return {
+        "session_id": session_id,
+        "status": "COMPLETED",
+        "diagnostic_report": diagnostic_report
+    }

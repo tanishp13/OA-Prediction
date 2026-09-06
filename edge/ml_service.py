@@ -1,201 +1,177 @@
-"""
-edge/ml_service.py — decoupled OA severity inference service.
-
-Loads a serialized model (ONNX / Joblib / PyTorch state dict) if present, builds a
-feature vector from the session's aggregated telemetry + CV markers, and returns a
-Kellgren-Lawrence severity grade (0..4) with confidence and per-biomarker breakdown.
-
-If no model file is found (or its runtime isn't installed), a transparent clinical
-heuristic stands in so the whole system runs end-to-end. Drop your trained weights at
-OA_MODEL_PATH and implement `_predict_with_model` — the feature contract stays fixed.
-"""
-from __future__ import annotations
-
-import math
 import os
-from typing import Any, Dict, List, Optional
+import json
+import logging
+from typing import Dict, Any, Optional
+import numpy as np
+import joblib
 
-from . import database
-from .schemas import BiomarkerContribution, MLPrediction
+logger = logging.getLogger("edge.ml_service")
 
-MODEL_PATH = os.environ.get("OA_MODEL_PATH", os.path.join(os.path.dirname(__file__), "model", "oa_gbt.joblib"))
-MODEL_VERSION = os.environ.get("OA_MODEL_VERSION", "placeholder-1.0")
+# Filepaths relative to edge directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODELS_DIR = os.path.join(BASE_DIR, "models")
 
-# Ordered feature contract the model consumes. Keep in sync with training.
-FEATURE_ORDER = [
-    "rom_deg",           # kinematic range of motion
-    "angular_velocity",  # mean |d(angle)/dt|
-    "peak_force_n",      # peak axial load
-    "crepitus_energy",   # angle-gated acoustic RMS envelope (30-65 deg)
-    "spectral_peak_hz",  # dominant crepitus frequency
-    "q_angle",           # CV morphometric
-    "varus_valgus",      # CV morphometric
-]
+MODEL_PATH = os.path.join(MODELS_DIR, "osteo_classifier.joblib")
+SCALER_PATH = os.path.join(MODELS_DIR, "feature_scaler.joblib")
+METADATA_PATH = os.path.join(MODELS_DIR, "model_metadata.json")
 
 
-class _ModelHandle:
-    """Lazy loader that tolerates a missing model or runtime."""
+class OsteoInferenceEngine:
+    def __init__(self):
+        self.model = None
+        self.scaler = None
+        self.metadata = None
+        self.is_ready = False
+        self._load_artifacts()
 
-    def __init__(self, path: str) -> None:
-        self.path = path
-        self.kind: Optional[str] = None
-        self.obj: Any = None
-        self._tried = False
+    def _load_artifacts(self):
+        """Loads trained artifacts if present, else flags fallback mode."""
+        if (
+            os.path.exists(MODEL_PATH)
+            and os.path.exists(SCALER_PATH)
+            and os.path.exists(METADATA_PATH)
+        ):
+            try:
+                self.model = joblib.load(MODEL_PATH)
+                self.scaler = joblib.load(SCALER_PATH)
+                with open(METADATA_PATH, "r") as f:
+                    self.metadata = json.load(f)
+                self.is_ready = True
+                logger.info("Trained clinical model and scaler loaded successfully.")
+            except Exception as e:
+                logger.error(f"Failed loading model artifacts: {e}. Defaulting to mock engine.")
+                self.is_ready = False
+        else:
+            logger.warning("Model artifacts missing in edge/models/. Operating in mock heuristic mode.")
+            self.is_ready = False
 
-    def load(self) -> None:
-        if self._tried:
-            return
-        self._tried = True
-        if not os.path.exists(self.path):
-            return
-        ext = os.path.splitext(self.path)[1].lower()
-        try:
-            if ext in (".joblib", ".pkl"):
-                import joblib
-                self.obj = joblib.load(self.path)
-                self.kind = "sklearn"
-            elif ext == ".onnx":
-                import onnxruntime as ort
-                self.obj = ort.InferenceSession(self.path, providers=["CPUExecutionProvider"])
-                self.kind = "onnx"
-            elif ext in (".pt", ".pth"):
-                import torch
-                self.obj = torch.load(self.path, map_location="cpu")
-                self.kind = "torch"
-        except Exception:
-            self.obj = None
-            self.kind = None
-
-    @property
-    def available(self) -> bool:
-        return self.obj is not None
-
-
-_MODEL = _ModelHandle(MODEL_PATH)
-
-
-# ───────────────────────── feature engineering ─────────────────────────
-
-def build_features(session: Dict[str, Any], frames: List[Dict[str, Any]]) -> Dict[str, float]:
-    angles = [f["angle_deg"] for f in frames if f.get("angle_deg") is not None]
-    forces = [f["force_n"] for f in frames if f.get("force_n") is not None]
-
-    rom = (max(angles) - min(angles)) if angles else 0.0
-
-    # mean angular velocity from consecutive samples
-    vel = 0.0
-    if len(frames) > 1:
-        deltas = []
-        for a, b in zip(frames, frames[1:]):
-            dt = (b.get("ts", 0) - a.get("ts", 0)) or 1e-3
-            if a.get("angle_deg") is not None and b.get("angle_deg") is not None:
-                deltas.append(abs(b["angle_deg"] - a["angle_deg"]) / dt)
-        vel = sum(deltas) / len(deltas) if deltas else 0.0
-
-    peak_force = max(forces) if forces else 0.0
-
-    # angle-gated crepitus energy: RMS only inside the 30-65 deg patellofemoral zone
-    gated = [f for f in frames if f.get("angle_deg") is not None and 30.0 <= f["angle_deg"] <= 65.0]
-    crepitus = (sum(f.get("acoustic_rms", 0.0) for f in gated) / len(gated)) if gated else 0.0
-    peaks = [f.get("peak_freq_hz", 0.0) for f in gated if f.get("peak_freq_hz")]
-    spectral_peak = (sum(peaks) / len(peaks)) if peaks else 0.0
-
-    return {
-        "rom_deg": round(rom, 3),
-        "angular_velocity": round(vel, 3),
-        "peak_force_n": round(peak_force, 3),
-        "crepitus_energy": round(crepitus, 3),
-        "spectral_peak_hz": round(spectral_peak, 1),
-        "q_angle": float(session.get("q_angle") or 0.0),
-        "varus_valgus": float(session.get("varus_valgus") or 0.0),
-    }
-
-
-def _vectorize(features: Dict[str, float]) -> List[float]:
-    return [float(features.get(k, 0.0)) for k in FEATURE_ORDER]
-
-
-# ───────────────────────── prediction ─────────────────────────
-
-def _predict_with_model(vec: List[float]) -> Optional[Dict[str, Any]]:
-    """Return {grade, confidence} using the loaded model, or None to fall back."""
-    _MODEL.load()
-    if not _MODEL.available:
+    def validate_inputs(self, features: Dict[str, float]) -> Optional[str]:
+        """Ensures physical readings do not represent disconnected/faulty hardware."""
+        bounds = {
+            "q_angle": (5.0, 35.0),
+            "varus_valgus_deg": (-20.0, 20.0),
+            "max_flexion_deg": (0.0, 150.0),
+            "peak_force_n": (0.0, 2500.0),
+            "crepitus_rms": (0.0, 1.5),
+            "crepitus_peak_freq": (50.0, 3000.0),
+        }
+        for key, (low, high) in bounds.items():
+            val = features.get(key)
+            if val is None or not (low <= val <= high):
+                return f"Sensor out-of-bounds: '{key}' = {val}. Expected range: [{low}, {high}]."
         return None
-    try:
-        if _MODEL.kind == "sklearn":
-            grade = int(_MODEL.obj.predict([vec])[0])
-            conf = 0.8
-            if hasattr(_MODEL.obj, "predict_proba"):
-                proba = _MODEL.obj.predict_proba([vec])[0]
-                conf = float(max(proba))
-                grade = int(max(range(len(proba)), key=lambda i: proba[i]))
-            return {"grade": max(0, min(4, grade)), "confidence": round(conf, 3)}
-        if _MODEL.kind == "onnx":
-            import numpy as np
-            name = _MODEL.obj.get_inputs()[0].name
-            out = _MODEL.obj.run(None, {name: np.array([vec], dtype="float32")})
-            logits = out[0][0]
-            grade = int(max(range(len(logits)), key=lambda i: logits[i]))
-            exp = [math.exp(x) for x in logits]
-            conf = max(exp) / (sum(exp) or 1.0)
-            return {"grade": max(0, min(4, grade)), "confidence": round(float(conf), 3)}
-        if _MODEL.kind == "torch":
-            import torch
-            model = _MODEL.obj
-            if hasattr(model, "eval"):
-                model.eval()
-                with torch.no_grad():
-                    logits = model(torch.tensor([vec], dtype=torch.float32))[0]
-                grade = int(torch.argmax(logits).item())
-                conf = float(torch.softmax(logits, dim=0).max().item())
-                return {"grade": max(0, min(4, grade)), "confidence": round(conf, 3)}
-    except Exception:
-        return None
-    return None
+
+    def _mock_predict(self, features: Dict[str, float]) -> Dict[str, Any]:
+        """Plausible clinical rule-based backup if trained weights are absent."""
+        rms = features.get("crepitus_rms", 0.0)
+        q_angle = features.get("q_angle", 14.0)
+
+        if rms < 0.05 and q_angle < 16.0:
+            grade, conf, risk = 0, 0.88, "Normal"
+        elif rms < 0.12:
+            grade, conf, risk = 1, 0.74, "Doubtful"
+        elif rms < 0.25:
+            grade, conf, risk = 2, 0.79, "Mild"
+        elif rms < 0.40:
+            grade, conf, risk = 3, 0.82, "Moderate"
+        else:
+            grade, conf, risk = 4, 0.91, "Severe"
+
+        return {
+            "severity_grade": grade,
+            "grade_label": ["Normal", "Doubtful", "Mild", "Moderate", "Severe"][grade],
+            "confidence": conf,
+            "risk_level": risk,
+            "is_mock_prediction": True,
+            "probabilities": {f"Grade_{i}": 0.05 for i in range(5)},
+            "warning": "Running on heuristic mock. Drop trained model files into edge/models/ to activate ML.",
+        }
+
+    def predict(
+        self,
+        q_angle: float,
+        varus_valgus_deg: float,
+        max_flexion_deg: float,
+        peak_force_n: float,
+        crepitus_rms: float,
+        crepitus_peak_freq: float,
+    ) -> Dict[str, Any]:
+        features = {
+            "q_angle": float(q_angle),
+            "varus_valgus_deg": float(varus_valgus_deg),
+            "max_flexion_deg": float(max_flexion_deg),
+            "peak_force_n": float(peak_force_n),
+            "crepitus_rms": float(crepitus_rms),
+            "crepitus_peak_freq": float(crepitus_peak_freq),
+        }
+
+        # 1. Reject biomechanically invalid or saturated sensor signals
+        validation_error = self.validate_inputs(features)
+        if validation_error:
+            return {
+                "status": "REJECTED",
+                "severity_grade": None,
+                "error": validation_error,
+                "recommendation": "Check sensor attachments, skin contact gel, and re-screen.",
+            }
+
+        # 2. Fall back to mock if training artifacts are not present
+        if not self.is_ready:
+            res = self._mock_predict(features)
+            res["status"] = "SUCCESS"
+            return res
+
+        # 3. Assemble feature vector in the strict order defined by training metadata
+        feature_order = self.metadata.get(
+            "feature_order",
+            [
+                "q_angle",
+                "varus_valgus_deg",
+                "max_flexion_deg",
+                "peak_force_n",
+                "crepitus_rms",
+                "crepitus_peak_freq",
+            ],
+        )
+        input_row = np.array([[features[col] for col in feature_order]], dtype=np.float32)
+
+        # 4. Standardize features using the training distribution
+        input_scaled = self.scaler.transform(input_row)
+
+        # 5. Run LightGBM inference
+        # predict() on multiclass LightGBM booster returns array of probabilities per class
+        probabilities = self.model.predict(input_scaled)[0]
+        predicted_grade = int(np.argmax(probabilities))
+        confidence = float(probabilities[predicted_grade])
+
+        min_conf = self.metadata.get("minimum_confidence_threshold", 0.40)
+        labels = self.metadata.get(
+            "class_labels", ["Normal", "Doubtful", "Mild", "Moderate", "Severe"]
+        )
+
+        risk_tier = (
+            "Low Risk"
+            if predicted_grade <= 1
+            else ("Moderate Risk" if predicted_grade == 2 else "High Risk")
+        )
+
+        result = {
+            "status": "SUCCESS" if confidence >= min_conf else "LOW_CONFIDENCE",
+            "severity_grade": predicted_grade,
+            "grade_label": labels[predicted_grade],
+            "confidence": round(confidence, 4),
+            "risk_level": risk_tier,
+            "is_mock_prediction": False,
+            "probabilities": {
+                f"Grade_{i}": round(float(p), 4) for i, p in enumerate(probabilities)
+            },
+        }
+
+        if confidence < min_conf:
+            result["warning"] = "Low model confidence. Clinical manual review recommended."
+
+        return result
 
 
-def _heuristic(features: Dict[str, float]) -> Dict[str, Any]:
-    """Transparent clinical stand-in mirroring the biomarker weights the model learns."""
-    score = 0.0
-    score += min(1.0, features["crepitus_energy"] / 45.0) * 34.0     # acoustic crepitus dominant
-    score += min(1.0, features["peak_force_n"] / 350.0) * 16.0       # loading
-    score += min(1.0, abs(features["varus_valgus"]) / 12.0) * 16.0   # malalignment
-    score += min(1.0, features["q_angle"] / 22.0) * 12.0             # Q-angle
-    score += (1.0 - min(1.0, features["rom_deg"] / 90.0)) * 22.0     # ROM loss
-    grade = 0 if score < 18 else 1 if score < 34 else 2 if score < 55 else 3 if score < 75 else 4
-    conf = round(0.6 + min(0.35, score / 300.0), 3)
-    return {"grade": grade, "confidence": conf, "score": round(score, 1)}
-
-
-def _contributions(features: Dict[str, float]) -> List[BiomarkerContribution]:
-    weights = {
-        "crepitus_energy": 0.34, "rom_deg": 0.22, "peak_force_n": 0.16,
-        "varus_valgus": 0.16, "q_angle": 0.12,
-    }
-    return [BiomarkerContribution(name=k, value=features.get(k, 0.0), weight=w) for k, w in weights.items()]
-
-
-def predict_for_session(session_id: str) -> MLPrediction:
-    session = database.get_session(session_id)
-    if session is None:
-        raise ValueError(f"Unknown session {session_id}")
-    frames = database.frames_for_session(session_id)
-    features = build_features(session, frames)
-    vec = _vectorize(features)
-
-    out = _predict_with_model(vec)
-    if out is None:
-        out = _heuristic(features)
-        version = "heuristic-fallback"
-    else:
-        version = MODEL_VERSION
-
-    return MLPrediction(
-        session_id=session_id,
-        severity_grade=int(out["grade"]),
-        confidence=float(out["confidence"]),
-        biomarkers=features,
-        contributions=_contributions(features),
-        model_version=version,
-    )
+# Singleton instance accessible across FastAPI routers
+engine = OsteoInferenceEngine()
