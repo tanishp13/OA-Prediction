@@ -1,0 +1,24 @@
+# Core server (required)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.5
+
+# Real hardware ingestion (optional — server falls back to simulation without it)
+pyserial>=3.5
+
+# Computer-vision intake (optional — CV endpoint uses a geometry stub without these)
+mediapipe>=0.10
+opencv-python>=4.9
+pillow>=10.0
+numpy>=1.24
+
+# ML inference runtimes (optional — install whichever your model needs; heuristic used otherwise)
+joblib>=1.3
+scikit-learn>=1.3
+lightgbm>=4.1          # trained classifier is LightGBM (osteo_classifier.joblib)
+numpy>=1.24
+onnxruntime>=1.17     # only if you ship an .onnx variant
+# torch>=2.1          # uncomment if you ship a PyTorch state dict
+
+# Offline-first local cache (optional async driver — see edge/README.md § Offline resilience)
+aiosqlite>=0.19

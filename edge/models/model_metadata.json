@@ -1,0 +1,21 @@
+{
+  "feature_order": [
+    "max_flexion_deg",
+    "knee_ic_deg",
+    "gait_speed_mps",
+    "asymmetry_deg",
+    "crepitus_rms",
+    "peak_force_n"
+  ],
+  "target_classes": [
+    0,
+    1
+  ],
+  "class_labels": [
+    "Healthy",
+    "Knee Osteoarthritis"
+  ],
+  "total_training_records": 2126,
+  "model_type": "LightGBM_Biomechanical_Augmented_2000",
+  "version": "5.0.0"
+}
